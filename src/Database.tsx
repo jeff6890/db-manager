@@ -14,6 +14,7 @@ const DatabaseManager = () => {
   const [loading, setLoading] = useState(true);
   const [editedRows, setEditedRows] = useState<any[]>([]); // Store edited rows
   const [message, setMessage] = useState(''); // Added to display a message after changes have been submitted
+  const [newRow, setNewRow] = useState<{ [key: string]: any }>({}); // Added to store new row data
 
   useEffect(() => {
     fetchTables();
@@ -56,6 +57,21 @@ const DatabaseManager = () => {
     setEditedRows(rows.map(row => row.id === id ? { ...row, ...updates } : row));
   };
 
+  const addRow = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from(selectedTable)
+      .insert([newRow]);
+
+    if (error) console.error('Error adding row:', error);
+    else {
+      fetchRows(); // Refresh the data
+      setNewRow({}); // Reset new row data
+      setMessage('Row added successfully!'); // Display a message after row has been added
+    }
+    setLoading(false);
+  };
+
   const saveChanges = async () => {
     setLoading(true);
     for (const row of editedRows) {
@@ -68,6 +84,7 @@ const DatabaseManager = () => {
     }
     fetchRows(); // Refresh the data after saving changes
     setMessage('Changes saved successfully!'); // Display a message after changes have been submitted
+    setLoading(false);
   };
 
   const deleteRow = async (id: number) => {
@@ -125,6 +142,20 @@ const DatabaseManager = () => {
                   </td>
                 </tr>
               ))}
+              <tr>
+                {rows.length > 0 &&
+                  Object.keys(rows[0]).map((key) => (
+                    <td key={key}>
+                      <input
+                        value={newRow[key]?.toString() || ''}
+                        onChange={(e) => setNewRow({ ...newRow, [key]: e.target.value })}
+                      />
+                    </td>
+                  ))}
+                <td>
+                  <button onClick={addRow}>Add</button>
+                </td>
+              </tr>
             </tbody>
           </table>
           <button onClick={saveChanges}>Save Changes</button>
